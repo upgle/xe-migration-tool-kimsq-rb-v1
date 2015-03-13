@@ -65,10 +65,10 @@
         } else {
             switch($target_module) {
                 case 'member' :
-                        $query = sprintf("select count(*) as count from %s", $db_info->g4['member_table']);
+                        $query = sprintf("select count(*) as count from %s_s_mbrdata", $db_info->db_prefix);
                     break;
                 case 'message' :
-                        $query = sprintf("select count(*) as count from %s", $db_info->g4['memo_table']);
+                        $query = sprintf("select count(*) as count from %s_s_paper", $db_info->db_prefix);
                     break;
                 case 'module' :
                         $table_name = sprintf("%s_bbs_data",$db_info->db_prefix);
@@ -275,7 +275,7 @@
 
     <hr />
     <address>
-        powered by zero (xpressengine.com)
+        powered by NAVER (xpressengine.com)
     </address>
 </body>
 </html>
