@@ -217,15 +217,6 @@
 
                     // 현재 사용중인 primary key값을 sequence로 넣어두면 parent와 결합하여 depth를 이루어서 importing함
                     $cobj->sequence = $comment_info->uid;
-
-                    /*
-                    $depth = strlen($comment_info->wr_comment_reply);
-                    $wr_comment = $comment_info->wr_comment;
-                    $pstree[$wr_comment][$depth] = $comment_info->wr_id;
-
-                    if($depth<1) $cobj->parent = 0; 
-                    else $cobj->parent = $pstree[$wr_comment][$depth-1];
-                    */
                     $cobj->parent = 0;
                     $cobj->is_secret = 'N';
                     $cobj->content = nl2br($comment_info->content);
@@ -233,30 +224,45 @@
                     $cobj->notify_message = 'N';
                     $cobj->password = $comment_info->pw;
                     $cobj->user_id = $comment_info->id;
-                    $cobj->nick_name = $comment_info->name;
-                    $cobj->email = $comment_info->wr_email;
+                    $cobj->nick_name = $comment_info->nic;
+                    $cobj->email = '';
                     $cobj->homepage = '';
-                    $cobj->update = $comment_info->d_regis;
-                    $cobj->regdate = ($comment_info->d_modify) ? $comment_info->d_modify : $comment_info->d_regis;
+                    $cobj->regdate = $comment_info->d_regis;
+                    $cobj->update = ($comment_info->d_modify) ? $comment_info->d_modify : $comment_info->d_regis;
                     $cobj->ipaddress = $comment_info->ip;
-
                     $comments[] = $cobj;
+
+                    // 한줄 코멘트를 불러옴
+                    if($comment_info->oneline>0) {
+
+                        $query = sprintf("select * from %s_s_oneline where parent = '%s' order by uid asc", $db_info->db_prefix, $comment_info->uid);
+                        $oneline_result = $oMigration->query($query);
+                        while($oneline_info = mysql_fetch_object($oneline_result)) {
+                            
+                            $cobj = null;
+                            $cobj->parent = $comment_info->uid;
+                            $cobj->is_secret = 'N';
+                            $cobj->content = nl2br($oneline_info->content);
+                            $cobj->voted_count = 0;
+                            $cobj->notify_message = 'N';
+                            $cobj->password = '';
+                            $cobj->user_id = $oneline_info->id;
+                            $cobj->nick_name = $oneline_info->nic;
+                            $cobj->email = '';
+                            $cobj->homepage = '';
+                            $cobj->regdate = $oneline_info->d_regis;
+                            $cobj->update = ($oneline_info->d_modify) ? $oneline_info->d_modify : $oneline_info->d_regis;
+                            $cobj->ipaddress = $oneline_info->ip;
+                            $comments[] = $cobj;
+                        }
+                    }
                 }
 
-                // 한줄 코멘트를 불러옴
-                if($comment_info->oneline>0) {
-
-
-                    $query = sprintf("select * from %s_s_oneline where parent = '%s' order by uid desc", $db_info->db_prefix, $comment_info->uid);
-                    $oneline_result = $oMigration->query($query);
-
-
-                }
 
             }
             $obj->comments = $comments;
 
-            // 첨부파일 처리 (기본 2개인데 일단 20개로 만들어 보았음)
+            // 첨부파일 처리
             $files = array();
             if(preg_match_all("/\[(\d+)\]/", $document_info->upload, $filelist))
             {
