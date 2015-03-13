@@ -61,14 +61,15 @@
     if($target_module == 'member') {
 
         // 이미지닉네임, 이미지마크 경로, 프로필 이미지, 서명 구함
-        $image_mark_path = sprintf('%s/data/member/',$path);
+        $image_mark_path = sprintf('%s/_var/simbol',$path);
 
         // 헤더 정보를 출력
         $oMigration->setItemCount($limit_count);
         $oMigration->printHeader();
 
         // 회원정보를 역순(오래된 순)으로 구해옴
-        $query = sprintf("select * from %s %s", $db_info->g4['member_table'], $limit_query);
+        $db_prefix = $db_info->db_prefix;
+        $query = sprintf("select * from {$db_prefix}_s_mbrid inner join {$db_prefix}_s_mbrdata where {$db_prefix}_s_mbrid.uid = {$db_prefix}_s_mbrdata.memberuid %s", $limit_query);
         $member_result = $oMigration->query($query) or die(mysql_error());
 
         // 회원정보를 하나씩 돌면서 migration format에 맞춰서 변수화 한후에 printMemberItem 호출
@@ -76,33 +77,29 @@
             $obj = null;
 
             // 일반 변수들
-            $obj->user_id = $member_info->mb_id;
-            $obj->password = $member_info->mb_password;
-            $obj->user_name = $member_info->mb_name;
-            $obj->nick_name = $member_info->mb_nick;
+            $obj->user_id = $member_info->id;
+            $obj->password = $member_info->pw;
+            $obj->user_name = $member_info->name;
+            $obj->nick_name = $member_info->nick;
             if(!$obj->nick_name) $obj->nick_name = $obj->user_name;
-            $obj->email = $member_info->mb_email;
+            $obj->email = $member_info->email;
             if(!$obj->email) $obj->email = $obj->user_id.'@'.$obj->user_id.'.temp';
-            $obj->homepage = $member_info->mb_homepage;
-            $obj->blog = $member_info->mb_blog;
-            $obj->birthday = $member_info->mb_birth.'000000';
-            $obj->allow_mailing = $member_info->mb_mailing!=0?'Y':'N';
-            $obj->point = 0;
-            $obj->regdate = str_replace(array('-',':',' ',),'',$member_info->mb_datetime);
-            $obj->signature = $member_info->mb_signature;
+            $obj->homepage = $obj->blog = $member_info->home;
+            $obj->birthday = $member_info->birth1.$member_info->birth2.'000000';
+            $obj->allow_mailing = $member_info->mailing!=0?'Y':'N';
+            $obj->point = $member_info->point;
+            $obj->regdate = $member_info->d_regis;
+            $obj->signature = '';
 
             // 이미지이름, 이미지마크, 프로필이미지등은 경로를 입력
-            $image_mark = sprintf("%s/%s/%s.gif", $image_mark_path, substr($member_info->mb_id,0,2), $member_info->mb_id);
-            if(file_exists($image_mark)) $obj->image_mark = $image_mark;
+            $image_mark = sprintf("%s/%s",  $image_mark_path, $member_info->photo);
+            if($member_info->photo && file_exists($image_mark)) $obj->image_mark = $image_mark;
 
+            // EXTRA 정보 입력
             $obj->extra_vars = array(
-                'tel' => $member_info->mb_tel,
-                'hp' => $member_info->mb_hp,
-                'address' => $member_info->mb_addr1.' '.$member_info->mb_addr2.' '.$member_info->mb_zip1.'-'.$member_info->mb_zip2,
+                'tel' => $member_info->tel1,
+                'hp' => $member_info->tel2
             );
-
-            for($i=1;$i<=10;$i++) $obj->extra_vars['mb_'.$i] = $member_info->{'mb_'.$i};
-
             $oMigration->printMemberItem($obj);
         }
 
@@ -120,20 +117,25 @@
         $oMigration->printHeader();
 
         // 쪽지 정보를 오래된 순부터 구해옴
-        $query = sprintf("select me_recv_mb_id as receiver, me_send_mb_id as sender, me_send_datetime as regdate, me_read_datetime as readed_date, me_memo as content from %s order by me_send_datetime %s", $db_info->g4['memo_table'], $limit_query);
-
+        $query = sprintf("select * from %s_s_paper order by d_regis %s", $db_info->db_prefix, $limit_query);
         $message_result = $oMigration->query($query) or die(mysql_error());
 
         // 쪽지를 하나씩 돌면서 migration format에 맞춰서 변수화 한후에 printMessageItem 호출
-        while($obj = mysql_fetch_object($message_result)) {
+        while($message = mysql_fetch_object($message_result)) {
 
-            // 일반 변수들
-            if($obj->readed_date) $obj->readed = 'Y'; 
+            $receiver = getMemberID($message->my_mbruid);
+            $sender = getMemberID($message->by_mbruid);
+
+            if(!$receiver || !$sender) continue;
+
+            $obj->sender = $sender;
+            $obj->receiver = $receiver;
+            if($message->d_read) $obj->readed = 'Y'; 
             else $obj->readed = 'N';
-            $obj->regdate = str_replace(array('-',':',' '),'', $obj->regdate);
-            $obj->readed_date = str_replace(array('-',':',' '),'', $obj->readed_date);
+            $obj->readed_date = $message->d_read;
+            $obj->regdate = $message->d_regis;
+            $obj->content = nl2br($message->content);
             $obj->title = preg_match('/.{10}/su', $obj->content, $arr) ? $arr[0].'...' : $obj->content;
-            $obj->content = nl2br($obj->content);
 
             $oMigration->printMessageItem($obj);
         }

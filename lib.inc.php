@@ -1,7 +1,7 @@
 <?php
     /**
-     * @brief gnuboard4의 경로를 이용하여 DB정보를 얻어옴
-     * @author zero@xpressengine.com
+     * @brief KIMSQ RB 경로를 이용하여 DB정보를 얻어옴
+     * @author upgle@xpressengine.com
      **/
     function getDBInfo($path) {
         if(substr($path,-1)=='/') $path = substr($path, 0, strlen($path)-1);
@@ -17,5 +17,23 @@
         $output->db_database = $DB['name'];
         $output->db_prefix = $DB['head'];
         return $output;
-    } 
+    }
+
+    function getMemberID($uid)
+    {
+        global $oMigration;
+        global $db_info;
+
+        if(!isset($db_info)) {
+            $db_info = new stdclass();
+            $db_info->db_prefix = 'rb';
+        }
+        if(!$uid) return false;
+
+        // 게시판 정보를 구함
+        $query = sprintf("select * from %s_s_mbrid where uid='%s'", $db_info->db_prefix, $uid);
+        $module_info_result = $oMigration->query($query);
+        $member_info = mysql_fetch_object($module_info_result);
+        return $member_info->id;
+    }
 ?>
