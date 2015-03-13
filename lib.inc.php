@@ -30,10 +30,28 @@
         }
         if(!$uid) return false;
 
-        // 게시판 정보를 구함
+        // 회원 아이디 정보를 구함
         $query = sprintf("select * from %s_s_mbrid where uid='%s'", $db_info->db_prefix, $uid);
         $module_info_result = $oMigration->query($query);
         $member_info = mysql_fetch_object($module_info_result);
         return $member_info->id;
     }
+
+    function getMemberInfo($memberuid)
+    {
+        global $oMigration;
+        global $db_info;
+
+        if(!isset($db_info)) {
+            $db_info = new stdclass();
+            $db_info->db_prefix = 'rb';
+        }
+        if(!$memberuid) return false;
+
+        // 회원 정보를 구함
+        $query = sprintf("select * from %s_s_mbrdata where memberuid='%s'", $db_info->db_prefix, $memberuid);
+        $module_info_result = $oMigration->query($query);
+        $member_info = mysql_fetch_object($module_info_result);
+        return $member_info;
+    } 
 ?>

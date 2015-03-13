@@ -1,7 +1,7 @@
 <?php 
     /**
-     * @brief gnuboard4 export tool
-     * @author zero (zero@xpressengine.com)
+     * @brief KIMSQ RB v1 export tool
+     * @author UPGLE (upgle@xpressengine.com)
      **/
 
     @set_time_limit(0);
@@ -193,8 +193,13 @@
             $obj->user_id = $document_info->id;
             $obj->nick_name = $document_info->nic;
             if(!$obj->nick_name) $obj->nick_name = '-';
-            $obj->email = '';
-            $obj->homepage = '';
+            if($document_info->mbruid) 
+            {   
+                $member_info = getMemberInfo($document_info->mbruid);
+                $obj->email = $member_info ? $member_info->email : '';
+                $obj->homepage = $member_info ? $member_info->home : '';
+            }
+
             $obj->password = $document_info->pw;
             $obj->ipaddress = $document_info->ip;
             $obj->allow_comment = 'Y';
