@@ -122,7 +122,7 @@
 </head>
 <body>
 
-    <h1>KIMSQ RB v1 data export tool ver 0.2</h1>
+    <h1>KIMSQ RB v1 data export tool ver 1.0</h1>
 
 
     <?php
